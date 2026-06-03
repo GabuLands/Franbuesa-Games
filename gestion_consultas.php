@@ -1,5 +1,7 @@
 <?php
-include 'conexion.php';
+require_once 'verificar_sesion.php';
+require_once 'Conexion.php';
+requerirSesionUnica();
 
 // --- LÓGICA PARA ELIMINAR (Punto 1.d del profesor) ---
 if (isset($_GET['eliminar'])) {
@@ -32,19 +34,22 @@ $usuarios = $sentencia->fetchAll();
     .btn-editar { color: #00ffb3; text-decoration: none; font-weight: bold; margin-right: 10px; }
     .btn-reporte { background: #27ae60; color: white; padding: 10px; text-decoration: none; border-radius: 5px; display: inline-block; margin-bottom: 10px; }
   </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="js/temporizador.js"></script>
+  <script src="js/confirmar_salida.js"></script>
 </head>
 <body>
 
   <header class="barra-superior">
     <button id="btn-menu" class="btn-hamburguesa">☰</button>
     <div class="logo-container">
-      <a href="index.php"><img src="img/logo.png" alt="Logo" class="logo-brillante-redondo" /></a>
+      <a href=""><img src="img/logo.png" alt="Logo" class="logo-brillante-redondo" /></a>
       <span class="titulo-sitio">Franbuesa-Games</span>
     </div>
     <div class="botones-sesion">
       <a href="registro.php" class="btn-morado">Registrarse</a>
-      <a href="login.php" class="btn-morado">Salir</a>
+      <a href="logout.php" class="btn-morado">Salir</a>
     </div>
   </header>
 
@@ -52,8 +57,7 @@ $usuarios = $sentencia->fetchAll();
     <ul>
       <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
       <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
-      <li><a href="recarga.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
-      <li><a href="registro.php"><i data-lucide="user-plus"></i> Registrarse</a></li>
+      <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
       <li><a href="gestion_consultas.php" class="active"><i data-lucide="user"></i> Panel Gestión</a></li>
     </ul>
   </nav>
@@ -106,9 +110,12 @@ $usuarios = $sentencia->fetchAll();
   <script src="https://code.jquery.com"></script>
   <script>
     $(document).ready(function() {
+      // Control del menú hamburguesa
       $("#btn-menu").click(function() {
         $("#menuVertical").toggleClass("activo");
       });
+      
+      // Renderizar los iconos de Lucide
       lucide.createIcons();
     });
   </script>

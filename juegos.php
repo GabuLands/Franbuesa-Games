@@ -37,9 +37,7 @@
 <nav class="menu-vertical">
   <ul>
     <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
-    <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
     <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
-    <li><a href="registro.php"><i data-lucide="user-plus"></i> Registrarse</a></li>
     <li><a href="gestion_consultas.php"><i data-lucide="user"></i> Perfil</a></li>
   </ul>
 </nav>

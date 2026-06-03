@@ -70,9 +70,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
   <nav class="menu-vertical" id="menuVertical">
     <ul>
-      <li><a href="index.php">Inicio</a></li>
-      <li><a href="recargas.php" class="active">Recargas</a></li>
-      <li><a href="gestion_consultas.php">Gestión</a></li>
+      <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
+      <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
+      <li><a href="gestion_consultas.php"><i data-lucide="user"></i> Gestión</a></li>
     </ul>
   </nav>
 

@@ -1,7 +1,9 @@
 <?php
 // 1. Cargamos el autoloader de Composer (esto activa todas las librerías)
+require_once 'verificar_sesion.php';
+require_once 'Conexion.php';
+requerirSesionUnica();
 require 'vendor/autoload.php';
-require 'conexion.php';
 
 use Dompdf\Dompdf;
 

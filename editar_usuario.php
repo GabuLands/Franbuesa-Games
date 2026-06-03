@@ -1,5 +1,7 @@
 <?php
-include 'conexion.php';
+require_once 'verificar_sesion.php';
+require_once 'Conexion.php';
+requerirSesionUnica();
 $id = $_GET['id']; // Recibimos el ID del usuario a editar
 
 // 1. Se buscan los datos actuales del usuario
