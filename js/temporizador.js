@@ -75,4 +75,29 @@ function reiniciarInactividad() {
 const eventos = ['mousemove', 'keydown', 'click', 'scroll'];
 eventos.forEach(evento => {
     window.addEventListener(evento, reiniciarInactividad);
+    
 });
+
+// --- REVISIÓN DE SESIÓN DUPLICADA EN TIEMPO REAL (Polling) ---
+const INTERVALO_CHECK = 4000; // Revisar cada 4 segundos
+
+setInterval(async () => {
+    try {
+        // Consultamos al archivo que acabamos de crear
+        const respuesta = await fetch('check_session.php', { cache: 'no-store' });
+        const resultado = await respuesta.json();
+
+        // Si el servidor nos dice que la sesión ya no es válida (ej: se abrió en otra PC)
+        if (!resultado.valid) {
+            // Te redirige directo al login avisando qué pasó
+            if (resultado.motivo === 'otra_computadora') {
+                window.location.href = 'login.php?error_sesion=otra_computadora';
+            } else {
+                window.location.href = 'login.php?error_sesion=inactividad';
+            }
+        }
+    } catch (error) {
+        // Si hay una caída intermitente del servidor local, se ignora en silencio hasta el próximo intento
+        console.warn('Control de sesión en segundo plano pausado:', error);
+    }
+}, INTERVALO_CHECK);

@@ -44,9 +44,10 @@ $usuarios = $sentencia->fetchAll();
   <header class="barra-superior">
     <button id="btn-menu" class="btn-hamburguesa">☰</button>
     <div class="logo-container">
-      <a href=""><img src="img/logo.png" alt="Logo" class="logo-brillante-redondo" /></a>
+      <a href="index.php"><img src="img/logo.png" alt="Logo" class="logo-brillante-redondo" /></a>
       <span class="titulo-sitio">Franbuesa-Games</span>
     </div>
+  </header>
     <div class="botones-sesion">
       <a href="registro.php" class="btn-morado">Registrarse</a>
       <a href="logout.php" class="btn-morado">Salir</a>
