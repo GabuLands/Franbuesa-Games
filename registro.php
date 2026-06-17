@@ -56,12 +56,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
 
   <header class="barra-superior">
-    <button id="btn-menu" class="btn-hamburguesa">☰</button>
-    <div class="logo-container">
-      <a href="index.php"><img src="img/logo.png" alt="Logo" class="logo-brillante-redondo" /></a>
-      <span class="titulo-sitio">Franbuesa-Games</span>
-    </div>
-  </header>
+  <button id="btn-menu" class="btn-hamburguesa">&#9776;</button>
+
+  <div class="logo-container">
+    <a href="index.php">
+      <img src="img/logo.png" alt="Franbuesa-Games Logo" class="logo-brillante-redondo" />
+    </a>
+    <span class="titulo-sitio">Franbuesa-Games</span>
+  </div>
+
+  <div class="busqueda-container">
+    <input type="text" placeholder="Buscar juegos..." class="input-busqueda" />
+    <select class="selector-idioma">
+      <option value="es"> Español</option>
+      <option value="en"> English</option>
+      <option value="pt"> Português</option>
+    </select>
+  </div>
+
+  <div class="botones-sesion">
+    <a href="registro.php" class="btn-morado">Registrarse</a>
+    <a href="login.php" class="btn-morado">Iniciar sesión</a>
+  </div>
+</header>
 
  <nav class="menu-vertical">
   <ul>

@@ -2,6 +2,12 @@
 include 'conexion.php';
 $mensaje = "";
 
+if (isset($_SESSION['ID_Sesion'])) {
+    $fecha_ahora = date('Y-m-d H:i:s');
+    $stmt_update_actividad = $pdo->prepare("UPDATE sesiones SET Last_Activity_At = ? WHERE ID_Sesion = ?");
+    $stmt_update_actividad->execute([$fecha_ahora, $_SESSION['ID_Sesion']]);
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $id_usuario = 1; 
     $juego = $_POST['juego'];
@@ -59,25 +65,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
 
   <header class="barra-superior">
-    <button id="btn-menu" class="btn-hamburguesa">☰</button>
-    <div class="logo-container">
-      <a href="index.php">
-        <img src="img/logo.png" alt="Logo" class="logo-brillante-redondo" />
-      </a>
-      <span class="titulo-sitio">Franbuesa-Games</span>
-    </div>
-  </header>
+  <button id="btn-menu" class="btn-hamburguesa">&#9776;</button>
+
+  <div class="logo-container">
+    <a href="index.php">
+      <img src="img/logo.png" alt="Franbuesa-Games Logo" class="logo-brillante-redondo" />
+    </a>
+    <span class="titulo-sitio">Franbuesa-Games</span>
+  </div>
+
+  <div class="busqueda-container">
+    <input type="text" placeholder="Buscar juegos..." class="input-busqueda" />
+    <select class="selector-idioma">
+      <option value="es"> Español</option>
+      <option value="en"> English</option>
+      <option value="pt"> Português</option>
+    </select>
+  </div>
+
+  <div class="botones-sesion">
+    <a href="registro.php" class="btn-morado">Registrarse</a>
+    <a href="login.php" class="btn-morado">Iniciar sesión</a>
+  </div>
+</header>
 
   <nav class="menu-vertical" id="menuVertical">
     <ul>
       <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
       <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
       <li><a href="gestion_consultas.php"><i data-lucide="user"></i> Gestión</a></li>
+      <li><a href="logout.php"><i data-lucide="log-out"></i> Salir</a></li>
     </ul>
   </nav>
 
   <main class="contenido-principal">
-    <section class="formulario-usuario" style="max-width: 500px; margin: 0 auto;">
+    <section class="formulario-usuario" style="max-width: 500px; margin: 100px auto;">
       <h1>Recarga de Juego</h1>
       <div style="margin-bottom: 20px;"><?php echo $mensaje; ?></div>
 

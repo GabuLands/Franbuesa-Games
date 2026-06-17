@@ -1,8 +1,14 @@
 <?php
-require_once 'verificar_sesion.php';
+//require_once 'verificar_sesion.php';
 require_once 'Conexion.php';
-requerirSesionUnica();
+//requerirSesionUnica();
 
+// Al inicio de tus páginas protegidas, justo después de session_start():
+if (isset($_SESSION['ID_Sesion'])) {
+    $fecha_ahora = date('Y-m-d H:i:s');
+    $stmt_update_actividad = $pdo->prepare("UPDATE sesiones SET Last_Activity_At = ? WHERE ID_Sesion = ?");
+    $stmt_update_actividad->execute([$fecha_ahora, $_SESSION['ID_Sesion']]);
+}
 // --- LÓGICA PARA ELIMINAR (Punto 1.d del profesor) ---
 if (isset($_GET['eliminar'])) {
     $id_a_borrar = $_GET['eliminar'];
@@ -42,17 +48,29 @@ $usuarios = $sentencia->fetchAll();
 <body>
 
   <header class="barra-superior">
-    <button id="btn-menu" class="btn-hamburguesa">☰</button>
-    <div class="logo-container">
-      <a href="index.php"><img src="img/logo.png" alt="Logo" class="logo-brillante-redondo" /></a>
-      <span class="titulo-sitio">Franbuesa-Games</span>
-    </div>
-  </header>
-    <div class="botones-sesion">
-      <a href="registro.php" class="btn-morado">Registrarse</a>
-      <a href="logout.php" class="btn-morado">Salir</a>
-    </div>
-  </header>
+  <button id="btn-menu" class="btn-hamburguesa">&#9776;</button>
+
+  <div class="logo-container">
+    <a href="index.php">
+      <img src="img/logo.png" alt="Franbuesa-Games Logo" class="logo-brillante-redondo" />
+    </a>
+    <span class="titulo-sitio">Franbuesa-Games</span>
+  </div>
+
+  <div class="busqueda-container">
+    <input type="text" placeholder="Buscar juegos..." class="input-busqueda" />
+    <select class="selector-idioma">
+      <option value="es"> Español</option>
+      <option value="en"> English</option>
+      <option value="pt"> Português</option>
+    </select>
+  </div>
+
+  <div class="botones-sesion">
+    <a href="registro.php" class="btn-morado">Registrarse</a>
+    <a href="login.php" class="btn-morado">Iniciar sesión</a>
+  </div>
+</header>
 
   <nav class="menu-vertical" id="menuVertical">
     <ul>
@@ -60,6 +78,7 @@ $usuarios = $sentencia->fetchAll();
       <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
       <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
       <li><a href="gestion_consultas.php" class="active"><i data-lucide="user"></i> Panel Gestión</a></li>
+      <li><a href="logout.php"><i data-lucide="log-out"></i> Salir</a></li>
     </ul>
   </nav>
 

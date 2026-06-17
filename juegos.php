@@ -1,3 +1,12 @@
+<?php
+// Al inicio de tus páginas protegidas, justo después de session_start():
+if (isset($_SESSION['ID_Sesion'])) {
+    $fecha_ahora = date('Y-m-d H:i:s');
+    $stmt_update_actividad = $pdo->prepare("UPDATE sesiones SET Last_Activity_At = ? WHERE ID_Sesion = ?");
+    $stmt_update_actividad->execute([$fecha_ahora, $_SESSION['ID_Sesion']]);
+}
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -34,16 +43,15 @@
     </div>
   </header>
 
-<nav class="menu-vertical">
-  <ul>
-    <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
-    <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
-    <li><a href="gestion_consultas.php"><i data-lucide="user"></i> Perfil</a></li>
-  </ul>
-</nav>
+<nav class="menu-vertical" id="menuVertical">
+    <ul>
+      <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
+      <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
+      <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
+  </nav>
 
   <main class="contenido-principal">
-    <h1>Juegos disponibles</h1>
+    <h1 class="titulo-seccion">Juegos disponibles</h1>
     <div class="galeria-juegos">
       <div class="juego">
         <a href="recargas.php"><img src="img/cod.jpg" alt="Call of Duty Mobile" /></a>
