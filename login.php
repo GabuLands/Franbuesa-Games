@@ -1,6 +1,6 @@
 <?php
 date_default_timezone_set('America/Caracas');
-include 'Conexion.php'; // Respetando la C mayúscula de tu archivo
+include 'Conexion.php'; 
 session_start(); 
 
 $error = "";
@@ -43,11 +43,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $sesion_activa = $stmt_check->fetch();
 
                 if ($sesion_activa) {
-                    // Si hay una sesión activa previa, la inactivamos ya mismo para que no te trabe
                     $stmt_close = $pdo->prepare("UPDATE sesiones SET Estado_Sesion = 'Inactiva' WHERE ID_Sesion = ?");
                     $stmt_close->execute([$sesion_activa['ID_Sesion']]);
                     
-                    // Registro en auditoría del cierre forzado por solapamiento
                     $detalle_tumba = "Sesión previa [ID: " . $sesion_activa['ID_Sesion'] . "] cerrada automáticamente por nuevo inicio de sesión.";
                     $stmt_audit_tumba = $pdo->prepare("INSERT INTO auditoria (ID_Usuario, Accion, Tabla_Afectada, Detalle, IP_Direccion) VALUES (?, 'SESION_SOLAPADA_CIERRE', 'USUARIO', ?, ?)");
                     $stmt_audit_tumba->execute([$usuario['ID_Usuario'], $detalle_tumba, $_SERVER['REMOTE_ADDR']]);
@@ -57,8 +55,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // ÉXITO: Reseteamos los intentos fallidos del navegador
                 $_SESSION['intentos_fallidos'] = 0;
                 
-                $_SESSION['usuario_id'] = $usuario['ID_Usuario'];
+                $_SESSION['usuario_id']     = $usuario['ID_Usuario'];
                 $_SESSION['usuario_nombre'] = $usuario['Nombre_Completo'];
+                $_SESSION['usuario_rol']    = $usuario['Rol']; // <-- GUARDAMOS EL ROL EN LA SESIÓN
                 
                 $ip_direccion = $_SERVER['REMOTE_ADDR'];
                 $user_agent   = $_SERVER['HTTP_USER_AGENT'];
@@ -89,10 +88,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $stmt_audit_ok = $pdo->prepare("INSERT INTO auditoria (ID_Usuario, Accion, Tabla_Afectada, Detalle, IP_Direccion) VALUES (?, 'LOGIN_EXITOSO', 'USUARIO', ?, ?)");
                 $stmt_audit_ok->execute([$usuario['ID_Usuario'], $detalle_login, $ip_direccion]);
                 
-                header("Location: gestion_consultas.php");
+                // REDIRECCIÓN SEGÚN EL ROL:
+                if ($_SESSION['usuario_rol'] === 'Admin') {
+                    header("Location: bienvenida.php");
+                } else {
+                    header("Location: bienvenida.php"); // <--- El Cliente va a su página de bienvenida
+                }
                 exit();
             } else {
-                // ERROR: La clave está mal. Sumamos un intento
                 $_SESSION['intentos_fallidos']++;
                 
                 if ($_SESSION['intentos_fallidos'] >= 5) {

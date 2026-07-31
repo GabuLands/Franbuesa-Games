@@ -1,26 +1,36 @@
 <?php
-//require_once 'verificar_sesion.php';
+require_once 'verificar_sesion.php';
 require_once 'Conexion.php';
-//requerirSesionUnica();
 
-// Al inicio de tus páginas protegidas, justo después de session_start():
+// Descomentar para activar la validación estricta de sesión única si la usas vía función
+// requerirSesionUnica();
+
+// --- VALIDACIÓN DE ROL (Solo administradores) ---
+if (!isset($_SESSION['usuario_rol']) || $_SESSION['usuario_rol'] !== 'Admin') {
+    // Si es un cliente o usuario normal, lo enviamos a su bienvenida
+    header("Location: bienvenida.php");
+    exit();
+}
+
+// Al inicio de tus páginas protegidas:
 if (isset($_SESSION['ID_Sesion'])) {
     $fecha_ahora = date('Y-m-d H:i:s');
     $stmt_update_actividad = $pdo->prepare("UPDATE sesiones SET Last_Activity_At = ? WHERE ID_Sesion = ?");
     $stmt_update_actividad->execute([$fecha_ahora, $_SESSION['ID_Sesion']]);
 }
-// --- LÓGICA PARA ELIMINAR (Punto 1.d del profesor) ---
+
+// --- LÓGICA PARA ELIMINAR ---
 if (isset($_GET['eliminar'])) {
     $id_a_borrar = $_GET['eliminar'];
     $sql_borrar = "DELETE FROM USUARIO WHERE ID_Usuario = ?";
     $stmt = $pdo->prepare($sql_borrar);
     $stmt->execute([$id_a_borrar]);
-    // Recargamos la página con el nuevo nombre del archivo
+    
     header("Location: gestion_consultas.php?msg=eliminado");
     exit();
 }
 
-// --- LÓGICA PARA CONSULTA GENERAL (Punto 1.c y 2 del profesor) ---
+// --- CONSULTA GENERAL DE USUARIOS ---
 $sentencia = $pdo->query("SELECT * FROM USUARIO");
 $usuarios = $sentencia->fetchAll();
 ?>
@@ -39,6 +49,8 @@ $usuarios = $sentencia->fetchAll();
     .btn-borrar { color: #ff4d4d; text-decoration: none; font-weight: bold; }
     .btn-editar { color: #00ffb3; text-decoration: none; font-weight: bold; margin-right: 10px; }
     .btn-reporte { background: #27ae60; color: white; padding: 10px; text-decoration: none; border-radius: 5px; display: inline-block; margin-bottom: 10px; }
+    .badge-admin { background: #e74c3c; padding: 3px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
+    .badge-cliente { background: #3498db; padding: 3px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; }
   </style>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -48,36 +60,35 @@ $usuarios = $sentencia->fetchAll();
 <body>
 
   <header class="barra-superior">
-  <button id="btn-menu" class="btn-hamburguesa">&#9776;</button>
+    <button id="btn-menu" class="btn-hamburguesa">&#9776;</button>
 
-  <div class="logo-container">
-    <a href="index.php">
-      <img src="img/logo.png" alt="Franbuesa-Games Logo" class="logo-brillante-redondo" />
-    </a>
-    <span class="titulo-sitio">Franbuesa-Games</span>
-  </div>
+    <div class="logo-container">
+      <a href="index.php">
+        <img src="img/logo.png" alt="Franbuesa-Games Logo" class="logo-brillante-redondo" />
+      </a>
+      <span class="titulo-sitio">Franbuesa-Games</span>
+    </div>
 
-  <div class="busqueda-container">
-    <input type="text" placeholder="Buscar juegos..." class="input-busqueda" />
-    <select class="selector-idioma">
-      <option value="es"> Español</option>
-      <option value="en"> English</option>
-      <option value="pt"> Português</option>
-    </select>
-  </div>
+    <div class="busqueda-container">
+      <input type="text" placeholder="Buscar juegos..." class="input-busqueda" />
+      <select class="selector-idioma">
+        <option value="es"> Español</option>
+        <option value="en"> English</option>
+        <option value="pt"> Português</option>
+      </select>
+    </div>
 
-  <div class="botones-sesion">
-    <a href="registro.php" class="btn-morado">Registrarse</a>
-    <a href="login.php" class="btn-morado">Iniciar sesión</a>
-  </div>
-</header>
+    <div class="botones-sesion">
+      <a href="logout.php" class="btn-morado">Cerrar sesión</a>
+    </div>
+  </header>
 
   <nav class="menu-vertical" id="menuVertical">
     <ul>
       <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
       <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
       <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
-      <li><a href="gestion_consultas.php" class="active"><i data-lucide="user"></i> Panel Gestión</a></li>
+      <li><a href="implementar_seg_sql.php" class="active"><i data-lucide="user"></i> Panel Gestión</a></li>
       <li><a href="logout.php"><i data-lucide="log-out"></i> Salir</a></li>
     </ul>
   </nav>
@@ -100,6 +111,7 @@ $usuarios = $sentencia->fetchAll();
             <th>Nombre</th>
             <th>Correo</th>
             <th>Teléfono</th>
+            <th>Rol</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -111,10 +123,14 @@ $usuarios = $sentencia->fetchAll();
             <td><?php echo $u['Correo_Electronico']; ?></td>
             <td><?php echo $u['Telefono']; ?></td>
             <td>
-              <!-- BOTÓN EDITAR (Punto 1.b) -->
+              <?php if(isset($u['Rol']) && $u['Rol'] === 'Admin'): ?>
+                <span class="badge-admin">Admin</span>
+              <?php else: ?>
+                <span class="badge-cliente">Cliente</span>
+              <?php endif; ?>
+            </td>
+            <td>
               <a href="editar_usuario.php?id=<?php echo $u['ID_Usuario']; ?>" class="btn-editar">Editar</a>
-              
-              <!-- BOTÓN ELIMINAR (Punto 1.d) -->
               <a href="gestion_consultas.php?eliminar=<?php echo $u['ID_Usuario']; ?>" 
                  class="btn-borrar" 
                  onclick="return confirm('¿Seguro que deseas eliminar este usuario?')">Eliminar</a>
@@ -126,16 +142,11 @@ $usuarios = $sentencia->fetchAll();
     </div>
   </main>
 
-  <!-- Script para el menú -->
-  <script src="https://code.jquery.com"></script>
   <script>
     $(document).ready(function() {
-      // Control del menú hamburguesa
       $("#btn-menu").click(function() {
         $("#menuVertical").toggleClass("activo");
       });
-      
-      // Renderizar los iconos de Lucide
       lucide.createIcons();
     });
   </script>
