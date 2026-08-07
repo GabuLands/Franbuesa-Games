@@ -12,17 +12,17 @@ if (!isset($_SESSION['usuario_rol']) || $_SESSION['usuario_rol'] !== 'Admin') {
     exit();
 }
 
-// Al inicio de tus páginas protegidas:
+// Al inicio de tus páginas protegidas (se agregan comillas dobles en las columnas de PostgreSQL):
 if (isset($_SESSION['ID_Sesion'])) {
     $fecha_ahora = date('Y-m-d H:i:s');
-    $stmt_update_actividad = $pdo->prepare("UPDATE sesiones SET Last_Activity_At = ? WHERE ID_Sesion = ?");
+    $stmt_update_actividad = $pdo->prepare("UPDATE public.sesiones SET \"Last_Activity_At\" = ? WHERE \"ID_Sesion\" = ?");
     $stmt_update_actividad->execute([$fecha_ahora, $_SESSION['ID_Sesion']]);
 }
 
 // --- LÓGICA PARA ELIMINAR ---
 if (isset($_GET['eliminar'])) {
     $id_a_borrar = $_GET['eliminar'];
-    $sql_borrar = "DELETE FROM USUARIO WHERE ID_Usuario = ?";
+    $sql_borrar = "DELETE FROM public.usuario WHERE \"ID_Usuario\" = ?";
     $stmt = $pdo->prepare($sql_borrar);
     $stmt->execute([$id_a_borrar]);
     
@@ -31,7 +31,7 @@ if (isset($_GET['eliminar'])) {
 }
 
 // --- CONSULTA GENERAL DE USUARIOS ---
-$sentencia = $pdo->query("SELECT * FROM USUARIO");
+$sentencia = $pdo->query("SELECT * FROM public.usuario ORDER BY \"ID_Usuario\" ASC");
 $usuarios = $sentencia->fetchAll();
 ?>
 
@@ -88,7 +88,7 @@ $usuarios = $sentencia->fetchAll();
       <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
       <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
       <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
-      <li><a href="implementar_seg_sql.php" class="active"><i data-lucide="user"></i> Panel Gestión</a></li>
+      <li><a href="gestion_consultas.php" class="active"><i data-lucide="user"></i> Panel Gestión</a></li>
       <li><a href="logout.php"><i data-lucide="log-out"></i> Salir</a></li>
     </ul>
   </nav>
@@ -121,7 +121,7 @@ $usuarios = $sentencia->fetchAll();
             <td><?php echo $u['ID_Usuario']; ?></td>
             <td><?php echo $u['Nombre_Completo']; ?></td>
             <td><?php echo $u['Correo_Electronico']; ?></td>
-            <td><?php echo $u['Telefono']; ?></td>
+            <td><?php echo $u['Telefono'] ?? $u['telefono'] ?? 'N/A'; ?></td>
             <td>
               <?php if(isset($u['Rol']) && $u['Rol'] === 'Admin'): ?>
                 <span class="badge-admin">Admin</span>

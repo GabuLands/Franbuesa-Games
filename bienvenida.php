@@ -2,15 +2,15 @@
 require_once 'verificar_sesion.php';
 require_once 'Conexion.php';
 
-// Actualizar la última actividad en la base de datos
+// Actualizar la última actividad en la base de datos (PostgreSQL requiere "Columna")
 if (isset($_SESSION['ID_Sesion'])) {
     $fecha_ahora = date('Y-m-d H:i:s');
-    $stmt_update_actividad = $pdo->prepare("UPDATE sesiones SET Last_Activity_At = ? WHERE ID_Sesion = ?");
+    $stmt_update_actividad = $pdo->prepare("UPDATE public.sesiones SET \"Last_Activity_At\" = ? WHERE \"ID_Sesion\" = ?");
     $stmt_update_actividad->execute([$fecha_ahora, $_SESSION['ID_Sesion']]);
 }
 
-// Consultar los datos del usuario actual desde la BD para mostrarlos en el perfil
-$stmt_usr = $pdo->prepare("SELECT * FROM USUARIO WHERE ID_Usuario = ?");
+// Consultar los datos del usuario actual desde la BD
+$stmt_usr = $pdo->prepare("SELECT * FROM public.usuario WHERE \"ID_Usuario\" = ?");
 $stmt_usr->execute([$_SESSION['usuario_id']]);
 $datos_usuario = $stmt_usr->fetch();
 ?>
@@ -152,13 +152,13 @@ $datos_usuario = $stmt_usr->fetch();
       <!-- Tarjeta con la información del usuario en sesión -->
       <div class="info-usuario">
         <div class="info-item">
-          <strong>Nombre:</strong> <?php echo htmlspecialchars($datos_usuario['Nombre_Completo']); ?>
+          <strong>Nombre:</strong> <?php echo htmlspecialchars($datos_usuario['Nombre_Completo'] ?? $_SESSION['usuario_nombre']); ?>
         </div>
         <div class="info-item">
-          <strong>Correo:</strong> <?php echo htmlspecialchars($datos_usuario['Correo_Electronico']); ?>
+          <strong>Correo:</strong> <?php echo htmlspecialchars($datos_usuario['Correo_Electronico'] ?? ''); ?>
         </div>
         <div class="info-item">
-          <strong>Teléfono:</strong> <?php echo htmlspecialchars($datos_usuario['Telefono']); ?>
+          <strong>Teléfono:</strong> <?php echo htmlspecialchars($datos_usuario['Telefono'] ?? 'No registrado'); ?>
         </div>
         <div class="info-item">
           <strong>Tipo de Cuenta:</strong> 
