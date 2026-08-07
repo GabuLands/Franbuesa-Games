@@ -1,7 +1,9 @@
 <?php
 /**
- * Clase completa para backup y restore de PostgreSQL
+ * Módulo Integrado de Resguardo, Restauración y Utilidades de BD
+ * Proyecto: Franbuesa-Games
  */
+
 class PostgreSQLBackup {
     private $host;
     private $port;
@@ -9,6 +11,8 @@ class PostgreSQLBackup {
     private $username;
     private $password;
     private $backupDir;
+    // 💡 Ruta absoluta a los ejecutables de PostgreSQL 17 en Windows
+    private $pgPath = 'C:\\Program Files\\PostgreSQL\\17\\bin\\';
     
     public function __construct($host, $port, $database, $username, $password, $backupDir = 'backups') {
         $this->host = $host;
@@ -45,13 +49,16 @@ class PostgreSQLBackup {
         }
     }
     
+    // 1. BACKUP COMPLETO
     public function backupDatabase($customName = null) {
-        $filename = $customName ?: $this->database . '_' . date('Y-m-d_H-i-s') . '.sql';
+        $cleanName = $customName ? preg_replace('/[^a-zA-Z0-9_\.-]/', '', $customName) : null;
+        $filename = $cleanName ?: $this->database . '_' . date('Y-m-d_H-i-s') . '.sql';
         $filepath = $this->backupDir . '/' . $filename;
         
+        putenv("PGPASSWORD={$this->password}");
         $command = sprintf(
-            'PGPASSWORD=%s pg_dump -h %s -p %s -U %s -F p -f %s %s 2>&1',
-            escapeshellarg($this->password),
+            '"%spg_dump" -h %s -p %s -U %s -F p -f %s %s 2>&1',
+            $this->pgPath,
             escapeshellarg($this->host),
             escapeshellarg($this->port),
             escapeshellarg($this->username),
@@ -67,28 +74,28 @@ class PostgreSQLBackup {
                 'success' => true,
                 'filename' => $filename . '.gz',
                 'size' => filesize($filepath . '.gz'),
-                'message' => 'Backup completado exitosamente'
-            ];
-        } else {
-            return [
-                'success' => false,
-                'message' => 'Error: ' . implode("\n", $output)
+                'message' => 'Backup completo creado exitosamente'
             ];
         }
+        return ['success' => false, 'message' => 'Error: ' . implode("\n", $output)];
     }
     
+    // 2. BACKUP DE TABLAS ESPECÍFICAS
     public function backupSpecificTables($tables, $customName = null) {
         if (empty($tables)) {
             return ['success' => false, 'message' => 'Seleccione al menos una tabla'];
         }
         
-        $filename = $customName ?: $this->database . '_' . date('Y-m-d_H-i-s') . '_tables.sql';
+        $cleanName = $customName ? preg_replace('/[^a-zA-Z0-9_\.-]/', '', $customName) : null;
+        $filename = $cleanName ?: $this->database . '_' . date('Y-m-d_H-i-s') . '_tables.sql';
         $filepath = $this->backupDir . '/' . $filename;
         
         $tablesList = implode(' -t ', array_map('escapeshellarg', $tables));
+        
+        putenv("PGPASSWORD={$this->password}");
         $command = sprintf(
-            'PGPASSWORD=%s pg_dump -h %s -p %s -U %s -F p -t %s -f %s %s 2>&1',
-            escapeshellarg($this->password),
+            '"%spg_dump" -h %s -p %s -U %s -F p -t %s -f %s %s 2>&1',
+            $this->pgPath,
             escapeshellarg($this->host),
             escapeshellarg($this->port),
             escapeshellarg($this->username),
@@ -101,26 +108,21 @@ class PostgreSQLBackup {
         
         if ($returnCode === 0 && file_exists($filepath)) {
             $this->compressBackup($filepath);
-            return [
-                'success' => true,
-                'filename' => $filename . '.gz',
-                'message' => 'Backup de tablas completado'
-            ];
-        } else {
-            return [
-                'success' => false,
-                'message' => 'Error: ' . implode("\n", $output)
-            ];
+            return ['success' => true, 'filename' => $filename . '.gz', 'message' => 'Backup de tablas completado'];
         }
+        return ['success' => false, 'message' => 'Error: ' . implode("\n", $output)];
     }
     
+    // 3. BACKUP SOLO ESTRUCTURA
     public function backupStructureOnly($customName = null) {
-        $filename = $customName ?: $this->database . '_' . date('Y-m-d_H-i-s') . '_structure.sql';
+        $cleanName = $customName ? preg_replace('/[^a-zA-Z0-9_\.-]/', '', $customName) : null;
+        $filename = $cleanName ?: $this->database . '_' . date('Y-m-d_H-i-s') . '_structure.sql';
         $filepath = $this->backupDir . '/' . $filename;
         
+        putenv("PGPASSWORD={$this->password}");
         $command = sprintf(
-            'PGPASSWORD=%s pg_dump -h %s -p %s -U %s -F p -s -f %s %s 2>&1',
-            escapeshellarg($this->password),
+            '"%spg_dump" -h %s -p %s -U %s -F p -s -f %s %s 2>&1',
+            $this->pgPath,
             escapeshellarg($this->host),
             escapeshellarg($this->port),
             escapeshellarg($this->username),
@@ -132,27 +134,19 @@ class PostgreSQLBackup {
         
         if ($returnCode === 0 && file_exists($filepath)) {
             $this->compressBackup($filepath);
-            return [
-                'success' => true,
-                'filename' => $filename . '.gz',
-                'message' => 'Backup de estructura completado'
-            ];
-        } else {
-            return [
-                'success' => false,
-                'message' => 'Error: ' . implode("\n", $output)
-            ];
+            return ['success' => true, 'filename' => $filename . '.gz', 'message' => 'Backup de estructura completado'];
         }
+        return ['success' => false, 'message' => 'Error: ' . implode("\n", $output)];
     }
     
+    // 4. RESTAURAR BD (CON OPCIONES DE RECREAR O LIMPIAR)
     public function restoreBackup($filename, $options = []) {
-        $filepath = $this->backupDir . '/' . $filename;
+        $filepath = $this->backupDir . '/' . basename($filename);
         
         if (!file_exists($filepath)) {
             return ['success' => false, 'message' => 'El archivo no existe'];
         }
         
-        // Descomprimir si es necesario
         $sqlFile = $filepath;
         $isCompressed = false;
         
@@ -162,28 +156,23 @@ class PostgreSQLBackup {
             $this->decompressBackup($filepath, $sqlFile);
         }
         
-        // Opciones de restauración
         $dropDatabase = isset($options['drop_database']) ? $options['drop_database'] : false;
         $cleanBeforeRestore = isset($options['clean_before_restore']) ? $options['clean_before_restore'] : false;
         
         if ($dropDatabase) {
             $dropResult = $this->dropAndRecreateDatabase();
-            if (!$dropResult['success']) {
-                return $dropResult;
-            }
+            if (!$dropResult['success']) return $dropResult;
         }
         
-        if ($cleanBeforeRestore) {
+        if ($cleanBeforeRestore && !$dropDatabase) {
             $cleanResult = $this->cleanDatabase();
-            if (!$cleanResult['success']) {
-                return $cleanResult;
-            }
+            if (!$cleanResult['success']) return $cleanResult;
         }
         
-        // Restaurar
+        putenv("PGPASSWORD={$this->password}");
         $command = sprintf(
-            'PGPASSWORD=%s psql -h %s -p %s -U %s -d %s -f %s 2>&1',
-            escapeshellarg($this->password),
+            '"%spsql" -h %s -p %s -U %s -d %s -f %s 2>&1',
+            $this->pgPath,
             escapeshellarg($this->host),
             escapeshellarg($this->port),
             escapeshellarg($this->username),
@@ -199,39 +188,38 @@ class PostgreSQLBackup {
         
         if ($returnCode === 0) {
             return ['success' => true, 'message' => 'Restauración completada exitosamente'];
-        } else {
-            return ['success' => false, 'message' => 'Error: ' . implode("\n", $output)];
         }
+        return ['success' => false, 'message' => 'Error: ' . implode("\n", $output)];
     }
     
+    // 5. SUBIR ARCHIVO Y RESTAURAR
     public function restoreFromUploadedFile($tmpFile, $originalName) {
         $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         if (!in_array($extension, ['sql', 'gz'])) {
-            return ['success' => false, 'message' => 'Solo archivos .sql o .gz'];
+            return ['success' => false, 'message' => 'Solo se permiten archivos .sql o .gz'];
         }
         
         $filename = 'uploaded_' . date('Y-m-d_H-i-s') . '.' . $extension;
         $filepath = $this->backupDir . '/' . $filename;
         
         if (!move_uploaded_file($tmpFile, $filepath)) {
-            return ['success' => false, 'message' => 'Error al subir el archivo'];
+            return ['success' => false, 'message' => 'Error al subir el archivo al servidor'];
         }
         
         return $this->restoreBackup($filename, ['clean_before_restore' => true]);
     }
     
+    // 6. RESTAURAR TABLAS ESPECÍFICAS
     public function restoreSpecificTables($filename, $tables) {
         if (empty($tables)) {
             return ['success' => false, 'message' => 'Seleccione al menos una tabla'];
         }
         
-        $filepath = $this->backupDir . '/' . $filename;
-        
+        $filepath = $this->backupDir . '/' . basename($filename);
         if (!file_exists($filepath)) {
             return ['success' => false, 'message' => 'El archivo no existe'];
         }
         
-        // Descomprimir
         $sqlFile = $filepath;
         $isCompressed = false;
         
@@ -246,10 +234,10 @@ class PostgreSQLBackup {
         $errors = [];
         
         foreach ($tables as $table) {
-            $pattern = '/CREATE TABLE ' . $table . '.*?;/is';
+            $pattern = '/CREATE TABLE ' . preg_quote($table, '/') . '.*?;/is';
             preg_match($pattern, $content, $createMatches);
             
-            $insertPattern = '/INSERT INTO ' . $table . ' .*?;/is';
+            $insertPattern = '/INSERT INTO ' . preg_quote($table, '/') . ' .*?;/is';
             preg_match_all($insertPattern, $content, $insertMatches);
             
             if (!empty($createMatches)) {
@@ -274,11 +262,9 @@ class PostgreSQLBackup {
             unlink($sqlFile);
         }
         
-        if (empty($errors)) {
-            return ['success' => true, 'message' => 'Tablas restauradas: ' . implode(', ', $restored)];
-        } else {
-            return ['success' => false, 'message' => 'Restauración parcial con errores'];
-        }
+        return empty($errors) 
+            ? ['success' => true, 'message' => 'Tablas restauradas: ' . implode(', ', $restored)]
+            : ['success' => false, 'message' => 'Restauración parcial con errores: ' . implode(', ', $errors)];
     }
     
     private function dropAndRecreateDatabase() {
@@ -288,12 +274,11 @@ class PostgreSQLBackup {
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
             $pdo->exec("SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '{$this->database}' AND pid <> pg_backend_pid()");
-            $pdo->exec("DROP DATABASE IF EXISTS {$this->database}");
-            $pdo->exec("CREATE DATABASE {$this->database}");
-            
+            $pdo->exec("DROP DATABASE IF EXISTS \"{$this->database}\"");
+            $pdo->exec("CREATE DATABASE \"{$this->database}\"");
             return ['success' => true];
         } catch (PDOException $e) {
-            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Error al recrear la BD: ' . $e->getMessage()];
         }
     }
     
@@ -306,37 +291,31 @@ class PostgreSQLBackup {
             $pdo->exec("SET session_replication_role = replica");
             $tables = $this->getTables();
             foreach ($tables as $table) {
-                $pdo->exec("TRUNCATE TABLE {$table} CASCADE");
+                $pdo->exec("TRUNCATE TABLE \"{$table}\" CASCADE");
             }
             $pdo->exec("SET session_replication_role = DEFAULT");
-            
             return ['success' => true];
         } catch (PDOException $e) {
-            return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
+            return ['success' => false, 'message' => 'Error al limpiar BD: ' . $e->getMessage()];
         }
     }
     
     private function executeSQL($sql) {
-        try {
-            $dsn = "pgsql:host={$this->host};port={$this->port};dbname={$this->database}";
-            $pdo = new PDO($dsn, $this->username, $this->password);
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $pdo->exec($sql);
-            return true;
-        } catch (PDOException $e) {
-            throw new Exception($e->getMessage());
-        }
+        $dsn = "pgsql:host={$this->host};port={$this->port};dbname={$this->database}";
+        $pdo = new PDO($dsn, $this->username, $this->password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->exec($sql);
     }
     
+    // UTILIDADES
     public function verifyBackup($filename) {
-        $filepath = $this->backupDir . '/' . $filename;
-        
+        $filepath = $this->backupDir . '/' . basename($filename);
         if (!file_exists($filepath)) {
             return ['success' => false, 'message' => 'El archivo no existe'];
         }
         
         $result = [
-            'filename' => $filename,
+            'filename' => basename($filename),
             'size' => $this->formatBytes(filesize($filepath)),
             'modified' => date('Y-m-d H:i:s', filemtime($filepath))
         ];
@@ -344,17 +323,15 @@ class PostgreSQLBackup {
         if (pathinfo($filepath, PATHINFO_EXTENSION) === 'gz') {
             $gz = @gzopen($filepath, 'rb');
             if ($gz === false) {
-                return ['success' => false, 'message' => 'Archivo corrupto'];
+                return ['success' => false, 'message' => 'Archivo corrupto o imposible de abrir'];
             }
-            $content = gzread($gz, 100);
+            $content = gzread($gz, 512);
             gzclose($gz);
             
-            if (strpos($content, 'CREATE TABLE') !== false || strpos($content, 'INSERT') !== false) {
-                $result['valid'] = true;
-                return ['success' => true, 'message' => 'Backup válido', 'info' => $result];
+            if (strpos($content, 'CREATE TABLE') !== false || strpos($content, 'INSERT') !== false || strpos($content, 'PostgreSQL database dump') !== false) {
+                return ['success' => true, 'message' => 'Backup válido e íntegro', 'info' => $result];
             }
         }
-        
         return ['success' => true, 'message' => 'Backup verificado', 'info' => $result];
     }
     
@@ -414,7 +391,7 @@ class PostgreSQLBackup {
     }
     
     public function downloadBackup($filename) {
-        $filepath = $this->backupDir . '/' . $filename;
+        $filepath = $this->backupDir . '/' . basename($filename);
         if (file_exists($filepath)) {
             header('Content-Type: application/octet-stream');
             header('Content-Disposition: attachment; filename="' . basename($filepath) . '"');
@@ -426,7 +403,7 @@ class PostgreSQLBackup {
     }
     
     public function deleteBackup($filename) {
-        $filepath = $this->backupDir . '/' . $filename;
+        $filepath = $this->backupDir . '/' . basename($filename);
         if (file_exists($filepath)) {
             return unlink($filepath);
         }
@@ -443,17 +420,17 @@ class PostgreSQLBackup {
     }
 }
 
-// Procesar acciones
+// ── CONTROLADOR DE ACCIONES ──
 session_start();
 $message = '';
 $messageType = '';
 
 $defaultConfig = [
-    'host' => 'localhost',
-    'port' => '5432',
-    'database' => 'mi_base_datos',
-    'username' => 'mi_usuario',
-    'password' => 'mi_contraseña'
+    'host' => '',
+    'port' => '',
+    'database' => '',
+    'username' => '',
+    'password' => ''
 ];
 
 if (!isset($_SESSION['db_config'])) {
@@ -462,11 +439,11 @@ if (!isset($_SESSION['db_config'])) {
 
 if (isset($_POST['action']) && $_POST['action'] === 'test_connection') {
     $_SESSION['db_config'] = [
-        'host' => $_POST['host'],
-        'port' => $_POST['port'],
-        'database' => $_POST['database'],
-        'username' => $_POST['username'],
-        'password' => $_POST['password']
+        'host' => $_POST['host'] ?? '127.0.0.1',
+        'port' => $_POST['port'] ?? '5432',
+        'database' => $_POST['database'] ?? '',
+        'username' => $_POST['username'] ?? '',
+        'password' => $_POST['password'] ?? ''
     ];
 }
 
@@ -533,21 +510,21 @@ if (isset($_POST['action'])) {
                 $message = $result['message'];
                 $messageType = $result['success'] ? 'success' : 'error';
             } else {
-                $message = 'Seleccione backup y tablas';
+                $message = 'Seleccione un backup y al menos una tabla a restaurar';
                 $messageType = 'error';
             }
             break;
         case 'verify_backup':
             if (!empty($_POST['backup_file'])) {
                 $result = $backup->verifyBackup($_POST['backup_file']);
-                $message = $result['message'];
+                $message = $result['message'] . (isset($result['info']) ? " ({$result['info']['size']})" : "");
                 $messageType = $result['success'] ? 'success' : 'error';
             }
             break;
         case 'clean_backups':
             $days = (int)($_POST['days_to_keep'] ?? 30);
             $deleted = $backup->cleanOldBackups($days);
-            $message = count($deleted) > 0 ? "Eliminados " . count($deleted) . " backups" : "No hay backups antiguos";
+            $message = count($deleted) > 0 ? "Eliminados " . count($deleted) . " backups" : "No hay backups antiguos para eliminar";
             $messageType = 'success';
             break;
         case 'delete_backup':
@@ -562,6 +539,17 @@ if (isset($_POST['action'])) {
                 $backup->downloadBackup($_POST['backup_file']);
             }
             break;
+        case 'download_backup':
+            if (!empty($_POST['backup_file'])) {
+                $backup->downloadBackup($_POST['backup_file']);
+            }
+            break;
+        // 🚪 AGREGAR DESDE AQUÍ:
+        case 'logout':
+            unset($_SESSION['db_config']);
+            session_destroy();
+            header("Location: " . $_SERVER['PHP_SELF']);
+            exit;
     }
 }
 
@@ -573,162 +561,33 @@ $isConnected = $backup->testConnection()['success'];
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PostgreSQL Backup & Restore Manager</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .header { text-align: center; color: white; margin-bottom: 30px; }
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s;
-        }
-        .card:hover { transform: translateY(-3px); }
-        .card h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-        .card h3 { color: #4a5568; margin: 15px 0 10px; font-size: 1.1em; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #333; font-weight: 500; }
-        input[type="text"], input[type="password"], input[type="number"], select, input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        input:focus, select:focus { outline: none; border-color: #667eea; }
-        button {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
-            margin-top: 10px;
-        }
-        button:hover { background: #5a67d8; }
-        button.danger { background: #e53e3e; }
-        button.danger:hover { background: #c53030; }
-        button.success { background: #48bb78; }
-        button.success:hover { background: #38a169; }
-        button.info { background: #4299e1; }
-        button.info:hover { background: #3182ce; }
-        button.warning { background: #ed8936; }
-        .message {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            animation: slideDown 0.5s ease;
-        }
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .message.success { background: #c6f6d5; color: #22543d; border-left: 4px solid #48bb78; }
-        .message.error { background: #fed7d7; color: #742a2a; border-left: 4px solid #e53e3e; }
-        .message.info { background: #bee3f8; color: #2c5282; border-left: 4px solid #4299e1; }
-        .backup-list { max-height: 500px; overflow-y: auto; }
-        .backup-item {
-            background: #f7fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .backup-info { flex: 1; }
-        .backup-name { font-weight: 600; color: #2d3748; margin-bottom: 5px; }
-        .backup-meta { font-size: 12px; color: #718096; }
-        .backup-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .backup-actions button { margin: 0; padding: 5px 10px; font-size: 12px; }
-        .checkbox-group {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
-        }
-        .checkbox-item { margin-bottom: 8px; }
-        .checkbox-item label { display: inline; margin-left: 8px; }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .stat-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        .stat-number { font-size: 2em; font-weight: bold; color: #667eea; }
-        .stat-label { color: #718096; margin-top: 5px; }
-        .connection-status {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-        .status-connected { background: #48bb78; color: white; }
-        .status-disconnected { background: #e53e3e; color: white; }
-        .restore-options {
-            background: #fef5e7;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
-        hr { margin: 15px 0; border: none; border-top: 1px solid #e2e8f0; }
-        @media (max-width: 768px) {
-            .grid { grid-template-columns: 1fr; }
-            .backup-item { flex-direction: column; align-items: flex-start; }
-            .backup-actions { margin-top: 10px; }
-        }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Franbuesa-Games | Gestión de Resguardos y Restauración BD</title>
+    <link rel="stylesheet" href="css/estilos.css" />
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>PostgreSQL Backup & Restore Manager</h1>
-        <p>Herramienta completa para respaldar y restaurar bases de datos</p>
+        <h1>Franbuesa-Games BD Backup & Restore Manager</h1>
+        <p>Módulo de Seguridad y Gestión de Respaldos PostgreSQL</p>
     </div>
     
     <?php if ($message): ?>
         <div class="message <?php echo $messageType; ?>"><?php echo htmlspecialchars($message); ?></div>
     <?php endif; ?>
     
+    <!-- 📊 ESTADÍSTICAS EN TIEMPO REAL -->
     <div class="stats">
-        <div class="stat-card"><div class="stat-number"><?php echo count($backups); ?></div><div class="stat-label">Backups</div></div>
-        <div class="stat-card"><div class="stat-number"><?php echo count($tables); ?></div><div class="stat-label">Tablas</div></div>
-        <div class="stat-card"><div class="stat-number"><?php echo $isConnected ? '✅' : '❌'; ?></div><div class="stat-label">Conexión</div></div>
+        <div class="stat-card"><div class="stat-number"><?php echo count($backups); ?></div><div class="stat-label">Backups Guardados</div></div>
+        <div class="stat-card"><div class="stat-number"><?php echo count($tables); ?></div><div class="stat-label">Tablas Detectadas</div></div>
+        <div class="stat-card"><div class="stat-number"><?php echo $isConnected ? '✅' : '❌'; ?></div><div class="stat-label">Estado Conexión</div></div>
     </div>
     
     <div class="grid">
+        <!-- 🔌 Configuración de Conexión -->
         <div class="card">
-            <h2>🔌 Conexión</h2>
+            <h2>🔌 Conexión BD</h2>
             <form method="POST">
                 <input type="hidden" name="action" value="test_connection">
                 <div class="form-group"><label>Host:</label><input type="text" name="host" value="<?php echo htmlspecialchars($config['host']); ?>" required></div>
@@ -736,31 +595,35 @@ $isConnected = $backup->testConnection()['success'];
                 <div class="form-group"><label>Base Datos:</label><input type="text" name="database" value="<?php echo htmlspecialchars($config['database']); ?>" required></div>
                 <div class="form-group"><label>Usuario:</label><input type="text" name="username" value="<?php echo htmlspecialchars($config['username']); ?>" required></div>
                 <div class="form-group"><label>Contraseña:</label><input type="password" name="password" value="<?php echo htmlspecialchars($config['password']); ?>"></div>
-                <button type="submit" class="info">🔌 Probar Conexión</button>
-                <span class="connection-status <?php echo $isConnected ? 'status-connected' : 'status-disconnected'; ?>">
-                    <?php echo $isConnected ? '✓ Conectado' : '✗ Desconectado'; ?>
-                </span>
+                <button type="submit" class="info">🔌 Probar / Guardar Conexión</button>
+            </form>
+            <!-- 🚪 BOTÓN DE DESCONECTAR (Agrega estas líneas): -->
+            <form method="POST" style="margin-top: 10px;">
+                <input type="hidden" name="action" value="logout">
+                <button type="submit" class="danger">🚪 Desconectar / Limpiar Sesión</button>
             </form>
         </div>
         
+        <!-- 💾 SECCIÓN BACKUP -->
         <div class="card">
-            <h2>💾 Backup Completo</h2>
+            <h2>💾 Backup Completo BD</h2>
             <form method="POST">
                 <input type="hidden" name="action" value="full_backup">
-                <div class="form-group"><label>Nombre (opcional):</label><input type="text" name="custom_name" placeholder="backup.sql"></div>
+                <div class="form-group"><label>Nombre personalizado (opcional):</label><input type="text" name="custom_name" placeholder="backup_completo.sql"></div>
                 <button type="submit" class="success">✅ Crear Backup Completo</button>
             </form>
             
             <hr>
             
-            <h2>🏗️ Solo Estructura</h2>
+            <h2>🏗️ Backup Solo Estructura</h2>
             <form method="POST">
                 <input type="hidden" name="action" value="structure_backup">
-                <div class="form-group"><label>Nombre (opcional):</label><input type="text" name="custom_name" placeholder="estructura.sql"></div>
-                <button type="submit" class="info">📐 Backup Estructura</button>
+                <div class="form-group"><label>Nombre personalizado (opcional):</label><input type="text" name="custom_name" placeholder="estructura.sql"></div>
+                <button type="submit" class="info">📐 Backup Solo Estructura</button>
             </form>
         </div>
         
+        <!-- 📋 BACKUP DE TABLAS ESPECÍFICAS -->
         <div class="card">
             <h2>📋 Backup Tablas Específicas</h2>
             <form method="POST">
@@ -776,21 +639,22 @@ $isConnected = $backup->testConnection()['success'];
                                 </div>
                             <?php endforeach; ?>
                         <?php else: ?>
-                            <p style="color:#999;">No hay tablas o no hay conexión</p>
+                            <p style="color:#999;">Sin conexión o no se encontraron tablas</p>
                         <?php endif; ?>
                     </div>
                 </div>
-                <div class="form-group"><label>Nombre (opcional):</label><input type="text" name="custom_name" placeholder="tablas.sql"></div>
+                <div class="form-group"><label>Nombre opcional:</label><input type="text" name="custom_name" placeholder="mis_tablas.sql"></div>
                 <button type="submit" class="info">📝 Backup Seleccionadas</button>
             </form>
         </div>
         
+        <!-- 🔄 SECCIÓN RESTORE -->
         <div class="card">
-            <h2>🔄 Restaurar Backup</h2>
+            <h2>🔄 Restaurar desde Backup Existente</h2>
             <form method="POST">
                 <input type="hidden" name="action" value="restore_backup">
                 <div class="form-group">
-                    <label>Seleccionar backup:</label>
+                    <label>Seleccionar backup guardado:</label>
                     <select name="backup_file" required>
                         <option value="">-- Seleccionar --</option>
                         <?php foreach ($backups as $bk): ?>
@@ -800,51 +664,110 @@ $isConnected = $backup->testConnection()['success'];
                 </div>
                 <div class="restore-options">
                     <div class="checkbox-item">
-                        <input type="checkbox" name="drop_database" id="drop_db">
-                        <label for="drop_db">⚠️ Eliminar y recrear BD antes de restaurar</label>
+                        <input type="checkbox" name="clean_before_restore" id="clean_before">
+                        <label for="clean_before"><b>Opción:</b> Limpiar BD (TRUNCATE) antes de restaurar</label>
                     </div>
                     <div class="checkbox-item">
-                        <input type="checkbox" name="clean_before_restore" id="clean_db">
-                        <label for="clean_db">🧹 Limpiar tablas existentes (Cascada)</label>
+                        <input type="checkbox" name="drop_database" id="drop_db">
+                        <label for="drop_db" style="color: red;"><b>Opción:</b> Eliminar y Recrear BD completa antes de restaurar</label>
                     </div>
                 </div>
-                <button type="submit" class="danger">⚡ Restaurar Base de Datos</button>
+                <button type="submit" class="warning" onclick="return confirm('¿Está seguro de restaurar este backup?');">⚠️ Restaurar BD</button>
+            </form>
+
+            <hr>
+
+            <h2>📤 Subir Archivo y Restaurar</h2>
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="upload_restore">
+                <div class="form-group">
+                    <label>Archivo SQL o SQL.GZ:</label>
+                    <input type="file" name="restore_file" accept=".sql,.gz" required>
+                </div>
+                <button type="submit" class="danger" onclick="return confirm('¿Desea subir y restaurar el archivo?');">📤 Subir y Restaurar</button>
             </form>
         </div>
 
-        <div class="card" style="grid-column: 1 / -1;">
-            <h2>📂 Historial de Backups Realizados</h2>
-            <div class="backup-list">
-                <?php if (!empty($backups)): ?>
-                    <?php foreach ($backups as $bk): ?>
-                        <div class="backup-item">
-                            <div class="backup-info">
-                                <div class="backup-name"><?php echo htmlspecialchars($bk['name']); ?></div>
-                                <div class="backup-meta">Tamaño: <?php echo $bk['size']; ?> | Fecha: <?php echo $bk['date']; ?></div>
-                            </div>
-                            <div class="backup-actions">
-                                <form method="POST" style="display:inline;">
-                                    <input type="hidden" name="action" value="download_backup">
-                                    <input type="hidden" name="backup_file" value="<?php echo htmlspecialchars($bk['name']); ?>">
-                                    <button type="submit" class="success">Descargar</button>
-                                </form>
-                                <form method="POST" style="display:inline;">
-                                    <input type="hidden" name="action" value="verify_backup">
-                                    <input type="hidden" name="backup_file" value="<?php echo htmlspecialchars($bk['name']); ?>">
-                                    <button type="submit" class="info">Verificar</button>
-                                </form>
-                                <form method="POST" style="display:inline;">
-                                    <input type="hidden" name="action" value="delete_backup">
-                                    <input type="hidden" name="backup_file" value="<?php echo htmlspecialchars($bk['name']); ?>">
-                                    <button type="submit" class="danger" onclick="return confirm('¿Seguro que deseas eliminar este respaldo?');">Eliminar</button>
-                                </form>
-                            </div>
+        <!-- 🧩 RESTAURAR TABLAS ESPECÍFICAS -->
+        <div class="card">
+            <h2>🧩 Restaurar Tablas Específicas</h2>
+            <form method="POST">
+                <input type="hidden" name="action" value="restore_tables">
+                <div class="form-group">
+                    <label>Seleccionar archivo de resguardo:</label>
+                    <select name="backup_file" required>
+                        <option value="">-- Seleccionar Backup --</option>
+                        <?php foreach ($backups as $bk): ?>
+                            <option value="<?php echo htmlspecialchars($bk['name']); ?>"><?php echo htmlspecialchars($bk['name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Seleccionar tablas a restaurar:</label>
+                    <div class="checkbox-group">
+                        <?php if (!empty($tables)): ?>
+                            <?php foreach ($tables as $table): ?>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" name="restore_tables_list[]" value="<?php echo htmlspecialchars($table); ?>" id="rst_tb_<?php echo md5($table); ?>">
+                                    <label for="rst_tb_<?php echo md5($table); ?>"><?php echo htmlspecialchars($table); ?></label>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p style="color:#999;">Sin conexión o tablas disponibles</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <button type="submit" class="warning" onclick="return confirm('¿Restaurar únicamente las tablas seleccionadas?');">🧩 Restaurar Tablas Seleccionadas</button>
+            </form>
+        </div>
+
+        <!-- 🧹 UTILIDADES: LIMPIEZA AUTOMÁTICA -->
+        <div class="card">
+            <h2>🧹 Limpieza Automática por Antigüedad</h2>
+            <form method="POST">
+                <input type="hidden" name="action" value="clean_backups">
+                <div class="form-group">
+                    <label>Eliminar resguardos con más de (días):</label>
+                    <input type="number" name="days_to_keep" value="30" min="1" required>
+                </div>
+                <button type="submit" class="warning">🗑️ Ejecutar Limpieza Automática</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 📂 ARCHIVOS DE BACKUP Y UTILIDADES ADICIONALES -->
+    <div class="card" style="margin-top: 20px;">
+        <h2>📂 Archivos de Backup Almacenados (Verificación, Descarga, Eliminación)</h2>
+        <div class="backup-list">
+            <?php if (!empty($backups)): ?>
+                <?php foreach ($backups as $bk): ?>
+                    <div class="backup-item">
+                        <div class="backup-info">
+                            <div class="backup-name"><?php echo htmlspecialchars($bk['name']); ?></div>
+                            <div class="backup-meta">Fecha: <?php echo $bk['date']; ?> | Tamaño: <?php echo $bk['size']; ?></div>
                         </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p style="text-align: center; color: #999; padding: 20px;">No se han encontrado archivos de respaldo guardados en el servidor.</p>
-                <?php endif; ?>
-            </div>
+                        <div class="backup-actions">
+                            <form method="POST" style="display:inline;">
+                                <input type="hidden" name="action" value="verify_backup">
+                                <input type="hidden" name="backup_file" value="<?php echo htmlspecialchars($bk['name']); ?>">
+                                <button type="submit" class="info">🔍 Verificar Integridad</button>
+                            </form>
+                            <form method="POST" style="display:inline;">
+                                <input type="hidden" name="action" value="download_backup">
+                                <input type="hidden" name="backup_file" value="<?php echo htmlspecialchars($bk['name']); ?>">
+                                <button type="submit" class="success">⬇️ Descargar</button>
+                            </form>
+                            <form method="POST" style="display:inline;">
+                                <input type="hidden" name="action" value="delete_backup">
+                                <input type="hidden" name="backup_file" value="<?php echo htmlspecialchars($bk['name']); ?>">
+                                <button type="submit" class="danger" onclick="return confirm('¿Eliminar este resguardo?');">🗑️ Eliminar</button>
+                            </form>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p style="color:#718096; text-align:center; padding:10px;">No existen resguardos guardados en el servidor.</p>
+            <?php endif; ?>
         </div>
     </div>
 </div>
