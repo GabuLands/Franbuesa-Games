@@ -57,6 +57,42 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
+
+ <header class="barra-superior">
+    <button id="btn-menu" class="btn-hamburguesa">&#9776;</button>
+
+    <div class="logo-container">
+      <a href="index.php">
+        <img src="img/logo.png" alt="Franbuesa-Games Logo" class="logo-brillante-redondo" />
+      </a>
+      <span class="titulo-sitio">Franbuesa-Games</span>
+    </div>
+
+    <div class="busqueda-container">
+      <input type="text" placeholder="Buscar juegos..." class="input-busqueda" />
+      <select class="selector-idioma">
+        <option value="es"> Español</option>
+        <option value="en"> English</option>
+        <option value="pt"> Português</option>
+      </select>
+    </div>
+
+    <div class="botones-sesion">
+      <a href="logout.php" class="btn-morado">Cerrar sesión</a>
+    </div>
+  </header>
+
+  <nav class="menu-vertical" id="menuVertical">
+    <ul>
+      <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
+      <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
+      <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
+      <li><a href="gestion_consultas.php"><i data-lucide="user"></i> Panel Gestión</a></li>
+      <li><a href="implementar_seg_sql.php"><i data-lucide="shield"></i> Seguridad BD</a></li>
+      <li><a href="logout.php"><i data-lucide="log-out"></i> Salir</a></li>
+    </ul>
+  </nav>
+
   <main class="contenido-principal">
     <div class="formulario-usuario">
       <h1>Modificar Cliente</h1>
