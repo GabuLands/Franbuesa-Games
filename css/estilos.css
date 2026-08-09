@@ -1,3 +1,4 @@
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #1a002d; 
@@ -23,7 +24,7 @@ body {
   padding: 30px;
   border-radius: 15px;
   max-width: 900px;
-  margin: 130px;
+  margin: 100px auto;
   box-shadow: 0 0 25px rgba(255, 64, 129, 0.4);
   backdrop-filter: blur(5px);
 }
@@ -250,7 +251,6 @@ figcaption {
   display: flex;
   align-items: center;
   gap: 1rem;
-  flex-wrap: wrap;
   margin-top: 0.5rem;
 }
 
@@ -403,7 +403,7 @@ figcaption {
 }
 
 .formulario-usuario {
-  max-width: 400px;
+  max-width: 500px;
   margin: 110px auto;
   background-color: #33003f;
   padding: 2rem;
@@ -488,7 +488,7 @@ figcaption {
 
 .formulario label {
   font-weight: bold;
-  color: #a2007d;
+  color: #a2007d;ego
 }
 
 .formulario input,
@@ -507,10 +507,9 @@ figcaption {
   padding: 20px;
 }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -536,11 +535,7 @@ figcaption {
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; color: #333; font-weight: 500; }
         input[type="text"], input[type="password"], input[type="number"], select, input[type="file"] {
-            width: 100%;
-            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
         }
         input:focus, select:focus { outline: none; border-color: #667eea; }
         button {

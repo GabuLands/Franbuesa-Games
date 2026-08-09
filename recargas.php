@@ -106,7 +106,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       <form id="formRecarga" method="POST" action="recargas.php">
         
         <label for="juego">Selecciona el juego:</label>
-        <select name="juego" id="juego" style="width:100%; padding:8px; border-radius:8px; margin-bottom: 10px;" required>
+        <select name="juego" id="juego" style="width:103%; padding:8px; border-radius:8px; margin-bottom: 10px;" required>
           <option value="cod">Call of Duty Mobile</option>
           <option value="freefire">Free Fire</option>
           <option value="ml">Mobile Legends</option>

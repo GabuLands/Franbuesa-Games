@@ -83,8 +83,6 @@
     <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
     <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
     <li><a href="registro.php"><i data-lucide="user-plus"></i> Registrarse</a></li>
-    <li><a href="implementar_seg_sql.php"><i data-lucide="user"></i> Panel Gestión</a></li>
-    <li><a href="logout.php"><i data-lucide="log-in"></i>Salir</a></li>
   </ul>
 </nav>
 
