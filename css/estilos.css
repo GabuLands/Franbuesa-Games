@@ -506,7 +506,14 @@ figcaption {
   height: calc(35vh - 80px); 
   padding: 20px;
 }
-
+.panel-container{
+  max-width: 65%;
+  margin: 110px auto;
+  background-color: #33003f;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+}
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

@@ -88,7 +88,7 @@ $usuarios = $sentencia->fetchAll();
       <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
       <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
       <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
-      <li><a href="gestion_consultas.php" class="active"><i data-lucide="user"></i> Panel Gestión</a></li>
+      <li><a href="implementar_seg_sql.php"><i data-lucide="shield"></i> Seguridad BD</a></li>
       <li><a href="logout.php"><i data-lucide="log-out"></i> Salir</a></li>
     </ul>
   </nav>

@@ -565,12 +565,49 @@ $isConnected = $backup->testConnection()['success'];
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Franbuesa-Games | Gestión de Resguardos y Restauración BD</title>
     <link rel="stylesheet" href="css/estilos.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
+    
+    <header class="barra-superior">
+        <button id="btn-menu" class="btn-hamburguesa">&#9776;</button>
+        
+        <div class="logo-container">
+            <a href="index.php">
+                <img src="img/logo.png" alt="Franbuesa-Games Logo" class="logo-brillante-redondo" />
+            </a>
+            <span class="titulo-sitio">Franbuesa-Games</span>
+        </div>
+        
+        <div class="busqueda-container">
+            <input type="text" placeholder="Buscar juegos..." class="input-busqueda" />
+            <select class="selector-idioma">
+                <option value="es"> Español</option>
+                <option value="en"> English</option>
+                <option value="pt"> Português</option>
+            </select>
+        </div>
+        
+        <div class="botones-sesion">
+            <a href="logout.php" class="btn-morado">Cerrar sesión</a>
+    </div>
+</header>
+
+<nav class="menu-vertical" id="menuVertical">
+    <ul>
+        <li><a href="index.php"><i data-lucide="home"></i> Inicio</a></li>
+        <li><a href="juegos.php"><i data-lucide="gamepad-2"></i> Juegos</a></li>
+        <li><a href="recargas.php"><i data-lucide="dollar-sign"></i> Recargas</a></li>
+        <li><a href="gestion_consultas.php" class="active"><i data-lucide="user"></i> Panel Gestión</a></li>
+        <li><a href="logout.php"><i data-lucide="log-out"></i> Salir</a></li>
+    </ul>
+</nav>
+<div class="panel-container">
+
 <div class="container">
     <div class="header">
-        <h1>Franbuesa-Games BD Backup & Restore Manager</h1>
-        <p>Módulo de Seguridad y Gestión de Respaldos PostgreSQL</p>
+        <h1>Módulo de Seguridad y Gestión de Respaldos PostgreSQL</h1>
     </div>
     
     <?php if ($message): ?>
@@ -771,5 +808,15 @@ $isConnected = $backup->testConnection()['success'];
         </div>
     </div>
 </div>
+</div>
+
 </body>
+<script>
+    $(document).ready(function() {
+      $("#btn-menu").click(function() {
+        $("#menuVertical").toggleClass("activo");
+      });
+      lucide.createIcons();
+    });
+  </script>
 </html>
